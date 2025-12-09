@@ -140,13 +140,6 @@ pactl list sinks short
 
 This service should use negligible CPU (<0.1%). If you see high usage, check for other audio issues or try restarting PulseAudio/PipeWire.
 
-## References
-
-- [Samsung Community: Sound Drops with One Connect Box](https://us.community.samsung.com/t5/QLED-and-The-Frame-TVs/Samsung-TV-Sound-Drops-for-1-2-seconds-every-hour-Q95TD-with-One/td-p/2801550)
-- [Samsung Community: Odyssey Ark Multiple Inputs](https://us.community.samsung.com/t5/Monitors-and-Memory/Odyssey-Ark-Multiple-Inputs-Update/td-p/2610308)
-- [Dell Community: HDMI Audio Sleep Issues](https://www.dell.com/community/Monitors/Sound-cuts-out-when-Monitor-enters-Sleep-Mode-HDMI-ST2410/td-p/3322617)
-- [Kodi Forum: EDID Override for HDMI Audio](https://forum.kodi.tv/showthread.php?tid=251833)
-
 ## License
 
 MIT License - Use freely, modify as needed.
