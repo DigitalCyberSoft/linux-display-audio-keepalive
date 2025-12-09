@@ -1,0 +1,12 @@
+[Unit]
+Description=HDMI Audio Keep-Alive Silent Stream
+After=pulseaudio.service pipewire.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pacat -p --rate=48000 --channels=2 --format=s16le /dev/zero
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
