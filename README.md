@@ -35,7 +35,7 @@ These problems have been reported across multiple Samsung devices with One Conne
 
 ## How It Works
 
-The service uses `pacat` (PulseAudio/PipeWire audio tool) to continuously stream silence to the audio output:
+The service uses `pacat` to continuously stream silence to the audio output. This works with both PulseAudio and PipeWire (via pipewire-pulse compatibility).
 
 ```bash
 pacat -p --rate=48000 --channels=2 --format=s16le /dev/zero
@@ -54,8 +54,11 @@ This keeps the audio link active without producing audible sound, preventing the
 ## Requirements
 
 - Linux with systemd
-- PulseAudio or PipeWire (with pipewire-pulse)
-- `pulseaudio-utils` package (provides `pacat`)
+- One of the following audio tools:
+  - **pulseaudio-utils** (recommended): provides `pacat`, works with both PulseAudio and PipeWire
+  - **pipewire-utils** (alternative): provides `pw-cat` for native PipeWire
+
+The installer automatically detects which tool is available.
 
 ### Installing Dependencies
 
@@ -76,11 +79,21 @@ sudo pacman -S libpulse
 
 ## Installation
 
+### Quick Install (curl)
+
 ```bash
+curl -fsSL https://raw.githubusercontent.com/DigitalCyberSoft/linux-display-audio-keepalive/main/install.sh | bash
+```
+
+Or clone and run:
+
+```bash
+git clone https://github.com/DigitalCyberSoft/linux-display-audio-keepalive.git
+cd linux-display-audio-keepalive
 ./install.sh
 ```
 
-Or manually:
+### Manual Installation
 
 ```bash
 cp hdmi-keepalive.service ~/.config/systemd/user/
@@ -125,16 +138,14 @@ which pacat
 
 ### Audio still cuts out
 
-The service streams to the default audio sink. If you have multiple audio outputs, you may need to modify the service to target a specific sink:
+The service streams to the default audio sink. If you have multiple audio outputs, you may need to modify the service file to target a specific sink.
 
-```bash
-pacat -p --rate=48000 --channels=2 --format=s16le --device=YOUR_SINK_NAME /dev/zero
-```
-
-Find your sink name with:
+Find your sink name:
 ```bash
 pactl list sinks short
 ```
+
+Then edit `~/.config/systemd/user/hdmi-keepalive.service` and add `--device=YOUR_SINK_NAME` to the ExecStart line.
 
 ### High CPU usage
 

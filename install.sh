@@ -24,17 +24,60 @@ error() {
     exit 1
 }
 
-check_dependencies() {
-    if ! command -v pacat &> /dev/null; then
-        error "pacat not found. Please install pulseaudio-utils:
-    Fedora:       sudo dnf install pulseaudio-utils
-    Ubuntu/Debian: sudo apt install pulseaudio-utils
-    Arch:         sudo pacman -S libpulse"
+detect_audio_tool() {
+    # Prefer pacat - it works with both PulseAudio and PipeWire (via pipewire-pulse)
+    # and handles continuous streaming from /dev/zero more reliably
+    if command -v pacat &> /dev/null; then
+        AUDIO_TOOL="pacat"
+        AUDIO_CMD="/usr/bin/pacat -p --rate=48000 --channels=2 --format=s16le /dev/zero"
+        # Check if running under PipeWire
+        if pactl info 2>/dev/null | grep -q "PipeWire"; then
+            info "Detected PipeWire with PulseAudio compatibility (pacat)"
+        else
+            info "Detected PulseAudio (pacat)"
+        fi
+    elif command -v pw-cat &> /dev/null; then
+        AUDIO_TOOL="pw-cat"
+        AUDIO_CMD="/usr/bin/pw-cat -p --raw --rate=48000 --channels=2 --format=s16 /dev/zero"
+        info "Detected PipeWire native (pw-cat)"
+        warn "Note: pw-cat may require periodic restarts; consider installing pulseaudio-utils for better reliability"
+    else
+        error "No audio tool found. Please install one of:
+    Recommended (works with both PulseAudio and PipeWire):
+        Fedora:        sudo dnf install pulseaudio-utils
+        Ubuntu/Debian: sudo apt install pulseaudio-utils
+        Arch:          sudo pacman -S libpulse
+
+    PipeWire native (alternative):
+        Fedora:        sudo dnf install pipewire-utils
+        Ubuntu/Debian: sudo apt install pipewire
+        Arch:          sudo pacman -S pipewire"
     fi
+}
+
+check_dependencies() {
+    detect_audio_tool
 
     if ! command -v systemctl &> /dev/null; then
         error "systemctl not found. This script requires systemd."
     fi
+}
+
+generate_service_file() {
+    cat > "$SERVICE_DIR/$SERVICE_NAME" << EOF
+[Unit]
+Description=HDMI Audio Keep-Alive Silent Stream
+After=pipewire.service pulseaudio.service
+
+[Service]
+Type=simple
+ExecStart=$AUDIO_CMD
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
 }
 
 install() {
@@ -45,13 +88,9 @@ install() {
     # Create user systemd directory if it doesn't exist
     mkdir -p "$SERVICE_DIR"
 
-    # Copy service file
-    if [[ ! -f "$SCRIPT_DIR/$SERVICE_NAME" ]]; then
-        error "Service file not found: $SCRIPT_DIR/$SERVICE_NAME"
-    fi
-
-    cp "$SCRIPT_DIR/$SERVICE_NAME" "$SERVICE_DIR/"
-    info "Copied service file to $SERVICE_DIR/"
+    # Generate service file with detected audio tool
+    generate_service_file
+    info "Generated service file using $AUDIO_TOOL"
 
     # Reload systemd
     systemctl --user daemon-reload
